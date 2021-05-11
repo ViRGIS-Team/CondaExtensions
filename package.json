@@ -1,0 +1,20 @@
+{
+  "name": "com.virgis.conda-extensions",
+  "version": "1.0.0",
+  "displayName": "Conda Extensions for UPM",
+  "description": "Scripts to Help integrate Conda and UPM",
+  "unity": "2018.1",
+  "keywords": [
+    "UPM",
+    "Conda"
+  ],
+  "author": {
+    "name": "Virgis Team",
+    "email": "info@virgis.org",
+    "url": "https://www.virgis.org"
+  },
+  "hideInEditor": false,
+  "dependencies": {
+  }
+}
+
