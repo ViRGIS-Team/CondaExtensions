@@ -78,8 +78,8 @@ namespace Conda
                 using (Process compiler = new Process())
                 {
 #if UNITY_EDITOR_WIN
-                    compiler.StartInfo.FileName = "cmd";
-                    compiler.StartInfo.Arguments = $" 'conda list -p {pluginPath} --json ' ";
+                    compiler.StartInfo.FileName = "powershell.exe";
+                    compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass conda list -p {pluginPath} --json ";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
                     compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p {pluginPath} --json ' ";
