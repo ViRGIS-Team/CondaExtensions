@@ -4,4 +4,6 @@ This UPM Package contains scripts that can be used by other UPM packages to inte
 
 # Documentation and Usage
 
-ToDo
+The purpose and usage of this package are eplained in the following article :
+
+[Package Documentation](https://medium.com/runic-software/using-conda-as-a-unity-package-version-2-c3442bf9c245)
