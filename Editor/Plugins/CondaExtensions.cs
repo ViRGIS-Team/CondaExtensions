@@ -39,6 +39,10 @@ namespace Conda
         {
 
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
+            if ( !Directory.Exists(pluginPath) )
+            {
+                Directory.CreateDirectory(pluginPath);
+            }
             string response;
             using (Process compiler = new Process())
             {
