@@ -44,14 +44,15 @@ namespace Conda
                 Directory.CreateDirectory(pluginPath);
             }
             string response;
+            Debug.Log(pluginPath);
             using (Process compiler = new Process())
             {
 #if UNITY_EDITOR_WIN
                 compiler.StartInfo.FileName = "powershell.exe";
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass \"{install_script}\" " +
                                                     $"-install {install_string} " +
-                                                    $"-destination '{pluginPath}' " +
-                                                    $"-shared_assets '{Application.streamingAssetsPath}' ";
+                                                    $"-destination \"{pluginPath}\" " +
+                                                    $"-shared_assets \"{Application.streamingAssetsPath}\" ";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
                 compiler.StartInfo.Arguments = $" {basharg} \"{install_script}\" " +
