@@ -39,10 +39,6 @@ namespace Conda
         {
 
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
-            if ( !Directory.Exists(pluginPath) )
-            {
-                Directory.CreateDirectory(pluginPath);
-            }
             string response;
             Debug.Log(pluginPath);
             using (Process compiler = new Process())
@@ -51,8 +47,8 @@ namespace Conda
                 compiler.StartInfo.FileName = "powershell.exe";
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass \"{install_script}\" " +
                                                     $"-install {install_string} " +
-                                                    $"-destination \"{pluginPath}\" " +
-                                                    $"-shared_assets \"{Application.streamingAssetsPath}\" ";
+                                                    $"-destination '{pluginPath}' " +
+                                                    $"-shared_assets '{Application.streamingAssetsPath}' ";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
                 compiler.StartInfo.Arguments = $" {basharg} \"{install_script}\" " +
