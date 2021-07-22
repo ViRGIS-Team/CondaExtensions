@@ -40,7 +40,7 @@ namespace Conda
 
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
             string response;
-            Debug.Log(pluginPath);
+
             using (Process compiler = new Process())
             {
 #if UNITY_EDITOR_WIN
