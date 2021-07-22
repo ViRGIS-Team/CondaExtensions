@@ -40,6 +40,7 @@ namespace Conda
 
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
             string response;
+
             using (Process compiler = new Process())
             {
 #if UNITY_EDITOR_WIN
@@ -79,10 +80,10 @@ namespace Conda
                 {
 #if UNITY_EDITOR_WIN
                     compiler.StartInfo.FileName = "powershell.exe";
-                    compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass conda list -p {pluginPath} --json ";
+                    compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass conda list -p '{pluginPath}' --json ";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p {pluginPath} --json ' ";
+                    compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p \"{pluginPath}\" --json ' ";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
