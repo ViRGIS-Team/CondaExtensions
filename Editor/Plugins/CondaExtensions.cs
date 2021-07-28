@@ -35,7 +35,7 @@ namespace Conda
         public const string basharg = "-i";
 #endif
 
-        public static string Install(string install_string, string install_script)
+        public static string Install(string install_string, string install_script, string path)
         {
 
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
@@ -59,6 +59,7 @@ namespace Conda
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
                 compiler.StartInfo.CreateNoWindow = true;
+                compiler.StartInfo.WorkingDirectory = path;
                 compiler.Start();
 
                 response = compiler.StandardOutput.ReadToEnd();
@@ -88,6 +89,7 @@ namespace Conda
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
                     compiler.StartInfo.CreateNoWindow = true;
+                    compiler.StartInfo.WorkingDirectory = Application.dataPath;
                     compiler.Start();
 
                     response = compiler.StandardOutput.ReadToEnd();
