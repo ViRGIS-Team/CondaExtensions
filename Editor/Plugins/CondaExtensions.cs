@@ -114,7 +114,7 @@ namespace Conda
         {
             ListWindow window = (ListWindow)EditorWindow.GetWindow(typeof(ListWindow));
             window.list = Conda.Info();
-            window.title = "Installed Conda Packages";
+            window.titleContent.text = "Installed Conda Packages";
             window.Show();
         }
     }
