@@ -45,7 +45,7 @@ namespace Conda
             {
 #if UNITY_EDITOR_WIN
                 compiler.StartInfo.FileName = "powershell.exe";
-                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass \"{install_script}\" " +
+                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass \".\\{install_script}\" " +
                                                     $"-install {install_string} " +
                                                     $"-destination '{pluginPath}' " +
                                                     $"-shared_assets '{Application.streamingAssetsPath}' ";
@@ -114,7 +114,7 @@ namespace Conda
         {
             ListWindow window = (ListWindow)EditorWindow.GetWindow(typeof(ListWindow));
             window.list = Conda.Info();
-            window.title = "Installed Conda Packages";
+            window.titleContent.text = "Installed Conda Packages";
             window.Show();
         }
     }
