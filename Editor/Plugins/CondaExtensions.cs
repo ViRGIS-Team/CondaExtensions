@@ -19,6 +19,10 @@ namespace Conda
         public string name;
         public string platform;
         public string version;
+
+        public string ToString() {
+            return name;
+        }
     }
 
     [Serializable]
@@ -38,6 +42,7 @@ namespace Conda
         public static string Install(string install_string, string install_script, string path)
         {
 
+            Debug.Log($"Starting Install for {install_string}");
             string pluginPath = Path.Combine(Application.dataPath, "Conda");
             string response;
 
