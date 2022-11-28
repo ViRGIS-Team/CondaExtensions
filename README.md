@@ -12,7 +12,7 @@ The purpose and usage of this package are eplained in the following article :
 
 As of release 1.0.4, this package will work with Unity Cloud Build.
 
-You will need to add a pre-build scipt to your build configuration in Unity Cloud Build to load Miniconda.
+You will need to add a pre-build script to your build configuration in Unity Cloud Build to load Miniconda.
 
 For Windows configurations - the following script works well:
 
