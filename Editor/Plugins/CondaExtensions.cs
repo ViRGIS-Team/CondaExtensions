@@ -89,7 +89,11 @@ namespace Conda
                     compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass conda list -p '{pluginPath}' --json ";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
+#if UNITY_CLOUD_BUILD
+                    compiler.StartInfo.Arguments = $"{basharg} -c '~/local/miniconda3/conda list -p \"{pluginPath}\" --json ' ";
+#else
                     compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p \"{pluginPath}\" --json ' ";
+#endif
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
