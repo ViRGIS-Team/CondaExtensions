@@ -90,7 +90,7 @@ namespace Conda
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
 #if UNITY_CLOUD_BUILD
-                    compiler.StartInfo.Arguments = $"{basharg} -c '~/local/miniconda3/conda list -p \"{pluginPath}\" --json ' ";
+                    compiler.StartInfo.Arguments = $"{basharg} -c '~/local/miniconda3/bin/conda list -p \"{pluginPath}\" --json ' ";
 #else
                     compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p \"{pluginPath}\" --json ' ";
 #endif
