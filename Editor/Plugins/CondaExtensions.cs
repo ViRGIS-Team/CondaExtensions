@@ -6,6 +6,7 @@ using System;
 using Debug = UnityEngine.Debug;
 
 #if UNITY_EDITOR
+
 namespace Conda
 {
     [Serializable]
@@ -33,10 +34,23 @@ namespace Conda
 
     public class Conda
     {
+#if UNITY_ANDROID
+        public const string m_Platform = "linux-aarch64;
+#elif UNITY_IOS
+        public const string m_Platform = "ios;
+#elif UNITY_STANDALONE_OSX
+        public const string m_Platform = "osx-64";
+#elif UNITY_STANDALONE_WIN
+        public const string m_Platform = "win-64";
+#elif UNITY_STANDALONE_LINUX
+        public const string m_Platform = "linux-64";
+#endif
+
+
 #if UNITY_EDITOR_OSX
-        public const string basharg = "-l";
+        public const string m_Basharg = "-l";
 #elif UNITY_EDITOR_LINUX
-        public const string basharg = "-i";
+        public const string m_Basharg = "-i";
 #endif
 
         public static string Install(string install_string, string install_script, string path)
@@ -53,13 +67,15 @@ namespace Conda
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass \".\\{install_script}\" " +
                                                     $"-install {install_string} " +
                                                     $"-destination '{pluginPath}' " +
-                                                    $"-shared_assets '{Application.streamingAssetsPath}' ";
+                                                    $"-shared_assets '{Application.streamingAssetsPath}' " +
+                                                    $"-platform {m_Platform}";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" {basharg} \"{install_script}\" " +
+                compiler.StartInfo.Arguments = $" {m_Basharg} \"{install_script}\" " +
                                                 $"-i {install_string} " +
                                                 $"-d '{pluginPath}' " +
-                                                $"-s '{Application.streamingAssetsPath}'  ";
+                                                $"-s '{Application.streamingAssetsPath}'  " +
+                                                $"-p {m_Platform}";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -90,9 +106,9 @@ namespace Conda
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
 #if UNITY_CLOUD_BUILD
-                    compiler.StartInfo.Arguments = $"{basharg} -c '~/local/miniconda3/bin/conda list -p \"{pluginPath}\" --json ' ";
+                    compiler.StartInfo.Arguments = $"{m_Basharg} -c '~/local/miniconda3/bin/conda list -p \"{pluginPath}\" --json ' ";
 #else
-                    compiler.StartInfo.Arguments = $"{basharg} -c 'conda list -p \"{pluginPath}\" --json ' ";
+                    compiler.StartInfo.Arguments = $"{m_Basharg} -c 'conda list -p \"{pluginPath}\" --json ' ";
 #endif
 #endif
                     compiler.StartInfo.UseShellExecute = false;
