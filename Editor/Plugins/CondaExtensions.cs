@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using static UnityEditor.Progress;
 
+
 #if UNITY_EDITOR
 namespace Conda
 {
@@ -80,11 +81,6 @@ namespace Conda
 
     public class Conda
     {
-#if UNITY_EDITOR_OSX
-        public const string basharg = "-l";
-#elif UNITY_EDITOR_LINUX
-        public const string basharg = "-i";
-#endif
 
         public static string Install(string install_string)
         {
@@ -97,6 +93,12 @@ namespace Conda
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
+#elif UNITY_EDITOR_OSX
+            url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-64";
+            mambaApp = Path.Combine(condaPath, "micromamba");
+#elif UNITY_EDITOR_LINUX
+            url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
+            mambaApp = Path.Combine(condaPath, "micromamba");
 #endif
 
             //Check the Conda environment exists and if it does not not - initialize it
@@ -112,6 +114,18 @@ namespace Conda
                 {
                     Debug.Log($"Downloading ${url}");
                     client.DownloadFile(url, mambaApp);
+#if UNITY_EDITOR_OSX
+                    using (Process compiler = new Process()) {
+                        compiler.StartInfo.FileName = "/bin/bash";
+                        compiler.StartInfo.Arguments = $"-c \"chmod 766 {mambaApp} && xattr -d \"com.apple.quarantine\" {mambaApp} \"";
+                        compiler.StartInfo.UseShellExecute = false;
+                        compiler.StartInfo.RedirectStandardOutput = true;
+                        compiler.StartInfo.CreateNoWindow = true;
+                        compiler.StartInfo.WorkingDirectory = condaPath;
+                        compiler.Start();
+                        compiler.WaitForExit();
+                    }
+#endif
                     Debug.Log($"File downloaded to: ${mambaApp}");
                 }
             };
@@ -126,6 +140,10 @@ namespace Conda
                     Debug.Log($"Running powershell.exe -ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y");
                     compiler.StartInfo.FileName = "powershell.exe";
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
+#else
+                    Debug.Log($"Running /bin/bash ./{mambaApp} create -c conda-forge -p {pluginPath} -y");
+                    compiler.StartInfo.FileName = "/bin/bash";
+                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
@@ -147,11 +165,9 @@ namespace Conda
                 compiler.StartInfo.FileName = "powershell.exe";
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
+                Debug.Log($"Runnign /bin/bash -c \"'{mambaApp}' install -c conda-forge --strict-channel-priority -p '{pluginPath}' --copy '{install_string}' -y -v --json *>&1 \" ");
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" {basharg} \"{install_script}\" " +
-                                                $"-i {install_string} " +
-                                                $"-d '{condaPath}' " +
-                                                $"-s '{Application.streamingAssetsPath}'  ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -180,7 +196,7 @@ namespace Conda
                 compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {mambaApp} list -p '{pluginPath}' --json ";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $"{basharg} -c '${mambaApp} list -p \"{pluginPath}\" --json ' ";
+                compiler.StartInfo.Arguments = $" -c '{mambaApp} list -p \"{pluginPath}\" --json ' ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -208,12 +224,12 @@ namespace Conda
                 compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {mambaApp} info --envs  --json ";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $"{basharg} -c '${mambaApp} list -p \"{pluginPath}\" --json ' ";
+                compiler.StartInfo.Arguments = $" -c '{mambaApp} info --envs  --json ' ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
                 compiler.StartInfo.CreateNoWindow = true;
-                compiler.StartInfo.WorkingDirectory = Application.dataPath;
+                compiler.StartInfo.WorkingDirectory = Path.Combine(Application.dataPath, "Conda");
                 compiler.Start();
 
                 response = compiler.StandardOutput.ReadToEnd();
@@ -245,11 +261,36 @@ namespace Conda
                 new Regex("\\.exe$"),
                 new Regex("\\.json$"),
                 new Regex("\\.txt$"),
+                new Regex("\\.meta$"),
                 }, new Regex[] {
                     new Regex("^api-"),
                     new Regex("^vcr"),
                     new Regex("^msvcp"),
                 });
+#else
+            RecurseAndClean(path, new Regex[] {
+                    new Regex("^conda-meta$"),
+                    new Regex("\\.meta$"),
+                    new Regex("^bin$"),
+                    new Regex("^lib$"),
+                });
+            path = Path.Combine(path, "lib");
+            RecurseAndClean(path, new Regex[] {
+                new Regex("\\.lib$"),
+                new Regex("\\.dylib$"),
+                new Regex("\\.meta$"),
+                });
+            foreach (var dir in Directory.GetDirectories(path)){
+                try
+                {
+                    Directory.Delete(dir,true);
+                    Console.WriteLine($"Deleted directory: {dir}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to delete directory {dir}: {ex.Message}");
+                }
+            }
 #endif
         }
 
