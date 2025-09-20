@@ -9,7 +9,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using static UnityEditor.Progress;
 
 
 #if UNITY_EDITOR
