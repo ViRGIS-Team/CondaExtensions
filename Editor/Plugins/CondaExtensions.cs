@@ -93,7 +93,7 @@ namespace Conda
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
-            platformn = "win-64";
+            platform = "win-64";
 #elif UNITY_EDITOR_OSX
             mambaApp = Path.Combine(condaPath, "micromamba");
             Debug.Log("Unity Editor Process Architecture: " + processArch);
