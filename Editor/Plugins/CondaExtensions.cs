@@ -88,11 +88,12 @@ namespace Conda
             string condaPath = Path.Combine(Application.dataPath, "Conda");
             string pluginPath = Path.Combine(condaPath, "Env");
             string response;
-            string url, mambaApp;
+            string url, mambaApp, platform;
             Architecture processArch = RuntimeInformation.ProcessArchitecture;
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
+            platformn = "win-64";
 #elif UNITY_EDITOR_OSX
             mambaApp = Path.Combine(condaPath, "micromamba");
             Debug.Log("Unity Editor Process Architecture: " + processArch);
@@ -100,10 +101,12 @@ namespace Conda
             if (processArch == Architecture.Arm64)
             {
                 url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-arm64";
+                platform = "osx-arm64";
             }
             else
             {
                 url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-64";
+                platform = "osx-64";
             }
 #elif UNITY_EDITOR_LINUX
             url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
@@ -146,13 +149,11 @@ namespace Conda
                 using (Process compiler = new Process())
                 {
 #if UNITY_EDITOR_WIN
-                    Debug.Log($"Running powershell.exe -ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y");
                     compiler.StartInfo.FileName = "powershell.exe";
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
 #else
-                    Debug.Log($"Running /bin/bash ./{mambaApp} create -c conda-forge  -p {pluginPath} -y");
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y'";
+                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y --platform {platform}'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
@@ -170,13 +171,11 @@ namespace Conda
             using (Process compiler = new Process())
             {
 #if UNITY_EDITOR_WIN
-                Debug.Log($"Running powershell.exe -ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1");
                 compiler.StartInfo.FileName = "powershell.exe";
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
-                Debug.Log($"Runnign /bin/bash -c \"'{mambaApp}' install -c conda-forge --strict-channel-priority -p '{pluginPath}' --copy '{install_string}' -y -v --json *>&1 \" ");
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{platform} --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -223,17 +222,24 @@ namespace Conda
 
         public static bool IsInstalled(string name, string packageVersion)
         {
+            CondaItem[] items;
+            try {
+                items = Info().Items;
+            } catch {
+                return false;
+            }
+            if (items.Length == 0) return false;
             Architecture processArch = RuntimeInformation.ProcessArchitecture;
             string platform = "";
 #if UNITY_EDITOR_WIN
             platform = "win-64";
 #elif UNITY_EDITOR_OSX
-            if (processArch == "X64")
+            if (processArch == Architecture.X64)
                 platform = "osx-64";
             else 
-                platform = "OSX-arm64
+                platform = "osx-arm64";
 #endif
-            return Array.Exists(Info().Items, item => item.name == name && item.version == packageVersion && item.platform == platform);
+            return Array.Exists( items, item => item.name == name && item.version == packageVersion && item.platform == platform);
         }
 
         public static CondaEnvs Envs()
@@ -398,7 +404,7 @@ namespace Conda
             if (list != null)
                 foreach (CondaItem item in list.Items)
                 {
-                    GUILayout.Label($"{item.name}\t\t:\t{item.version}");
+                    GUILayout.Label($"{item.name}\t\t:\t{item.version}:\t{item.platform}");
                 }
             GUILayout.EndScrollView();
         }
