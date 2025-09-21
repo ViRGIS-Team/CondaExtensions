@@ -89,7 +89,7 @@ namespace Conda
             string pluginPath = Path.Combine(condaPath, "Env");
             string response;
             string url, mambaApp;
-            var processArch = RuntimeInformation.ProcessArchitecture;
+            Architecture processArch = RuntimeInformation.ProcessArchitecture;
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
@@ -219,6 +219,21 @@ namespace Conda
             }
             EditorUtility.ClearProgressBar();
             return response == "" ? default : JsonUtility.FromJson<CondaInfo>($"{{\"Items\":{response}}}");
+        }
+
+        public static bool IsInstalled(string name, string packageVersion)
+        {
+            Architecture processArch = RuntimeInformation.ProcessArchitecture;
+            string platform = "";
+#if UNITY_EDITOR_WIN
+            platform = "win-64";
+#elif UNITY_EDITOR_OSX
+            if (processArch == "X64")
+                platform = "osx-64";
+            else 
+                platform = "OSX-arm64
+#endif
+            return Array.Exists(Info().Items, item => item.name == name && item.version == packageVersion && item.platform == platform);
         }
 
         public static CondaEnvs Envs()
