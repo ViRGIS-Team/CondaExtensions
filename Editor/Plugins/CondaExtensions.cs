@@ -89,12 +89,22 @@ namespace Conda
             string pluginPath = Path.Combine(condaPath, "Env");
             string response;
             string url, mambaApp;
+            var processArch = RuntimeInformation.ProcessArchitecture;
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
 #elif UNITY_EDITOR_OSX
-            url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-64";
             mambaApp = Path.Combine(condaPath, "micromamba");
+            Debug.Log("Unity Editor Process Architecture: " + processArch);
+
+            if (processArch == Architecture.Arm64)
+            {
+                url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-arm64";
+            }
+            else
+            {
+                url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-64";
+            }
 #elif UNITY_EDITOR_LINUX
             url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
             mambaApp = Path.Combine(condaPath, "micromamba");
@@ -140,7 +150,7 @@ namespace Conda
                     compiler.StartInfo.FileName = "powershell.exe";
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
 #else
-                    Debug.Log($"Running /bin/bash ./{mambaApp} create -c conda-forge -p {pluginPath} -y");
+                    Debug.Log($"Running /bin/bash ./{mambaApp} create -c conda-forge  -p {pluginPath} -y");
                     compiler.StartInfo.FileName = "/bin/bash";
                     compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y'";
 #endif
