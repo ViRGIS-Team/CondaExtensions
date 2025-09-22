@@ -88,7 +88,7 @@ namespace Conda
             string condaPath = Path.Combine(Application.dataPath, "Conda");
             string pluginPath = Path.Combine(condaPath, "Env");
             string response;
-            string url, mambaApp, platform;
+            string url, mambaApp, platform, target;
             Architecture processArch = RuntimeInformation.ProcessArchitecture;
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
@@ -112,7 +112,11 @@ namespace Conda
             url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
             mambaApp = Path.Combine(condaPath, "micromamba");
 #endif
-
+            if (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE") == null){
+                target = platform;
+            } else {
+                target = Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE");
+            }
             //Check the Conda environment exists and if it does not not - initialize it
             if (!Directory.Exists(condaPath))
             {
