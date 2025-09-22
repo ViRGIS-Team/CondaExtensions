@@ -181,7 +181,7 @@ namespace Conda
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} -c conda-forge/noarch -p '{pluginPath}' '{install_string}' -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -289,21 +289,23 @@ namespace Conda
                     new Regex("\\.txt$"),
                 });
             path = Path.Combine(path, "Library");
-            RecurseAndClean(path, new Regex[]{
-                new Regex("^bin$")
-            });
-            path = Path.Combine(path, "bin");
-            RecurseAndClean(path, new Regex[] {
-                new Regex("\\.dll$"),
-                new Regex("\\.exe$"),
-                new Regex("\\.json$"),
-                new Regex("\\.txt$"),
-                new Regex("\\.meta$"),
-                }, new Regex[] {
-                    new Regex("^api-"),
-                    new Regex("^vcr"),
-                    new Regex("^msvcp"),
+            if (Directory.Exists(path))
+                RecurseAndClean(path, new Regex[]{
+                    new Regex("^bin$")
                 });
+            path = Path.Combine(path, "bin");
+            if (Directory.Exists(path))
+                RecurseAndClean(path, new Regex[] {
+                    new Regex("\\.dll$"),
+                    new Regex("\\.exe$"),
+                    new Regex("\\.json$"),
+                    new Regex("\\.txt$"),
+                    new Regex("\\.meta$"),
+                    }, new Regex[] {
+                        new Regex("^api-"),
+                        new Regex("^vcr"),
+                        new Regex("^msvcp"),
+                    });
 #else
             RecurseAndClean(path, new Regex[] {
                     new Regex("^\\..*"),
@@ -313,20 +315,23 @@ namespace Conda
                     new Regex("^lib$"),
                 });
             path = Path.Combine(path, "lib");
-            RecurseAndClean(path, new Regex[] {
-                new Regex("\\.lib$"),
-                new Regex("\\.dylib$"),
-                new Regex("\\.meta$"),
-                });
-            foreach (var dir in Directory.GetDirectories(path)){
-                try
-                {
-                    Directory.Delete(dir,true);
-                    Console.WriteLine($"Deleted directory: {dir}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to delete directory {dir}: {ex.Message}");
+            if (Directory.Exists(path))
+            {
+                RecurseAndClean(path, new Regex[] {
+                    new Regex("\\.lib$"),
+                    new Regex("\\.dylib$"),
+                    new Regex("\\.meta$"),
+                    });
+                foreach (var dir in Directory.GetDirectories(path)){
+                    try
+                    {
+                        Directory.Delete(dir,true);
+                        Console.WriteLine($"Deleted directory: {dir}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to delete directory {dir}: {ex.Message}");
+                    }
                 }
             }
 #endif
