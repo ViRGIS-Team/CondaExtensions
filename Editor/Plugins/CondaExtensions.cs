@@ -170,6 +170,7 @@ namespace Conda
 
                     compiler.WaitForExit();
                 }
+                Debug.Log(response);
             }
 
             //Run the Mamba install process using the package specific install script
@@ -192,6 +193,7 @@ namespace Conda
 
                 compiler.WaitForExit();
             }
+            Debug.Log(response);
             return response;
         }
 
@@ -304,6 +306,7 @@ namespace Conda
                 });
 #else
             RecurseAndClean(path, new Regex[] {
+                    new Regex("^\\..*"),
                     new Regex("^conda-meta$"),
                     new Regex("\\.meta$"),
                     new Regex("^bin$"),
