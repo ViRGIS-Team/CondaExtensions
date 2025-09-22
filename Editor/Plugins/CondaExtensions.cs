@@ -116,6 +116,7 @@ namespace Conda
                 target = platform;
             } else {
                 target = Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE");
+                Debug.Log($"Conda Architecture Override set to {target}");
             }
             //Check the Conda environment exists and if it does not not - initialize it
             if (!Directory.Exists(condaPath))
@@ -157,7 +158,7 @@ namespace Conda
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y --platform {platform}'";
+                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y --platform {target}'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
@@ -179,7 +180,7 @@ namespace Conda
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{platform} --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} --strict-channel-priority -p '{pluginPath}' '{install_string}' -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
