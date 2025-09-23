@@ -181,7 +181,7 @@ namespace Conda
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} -c conda-forge/noarch -p '{pluginPath}' '{install_string}' -y --json \" ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} -c conda-forge/noarch -p '{pluginPath}' '{install_string}' --copy -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
