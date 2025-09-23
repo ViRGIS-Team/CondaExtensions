@@ -175,7 +175,7 @@ namespace Conda
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge/{target} -p {pluginPath} -y --platform {target} {syspkgs}'";
+                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge/{target} -c conda-forge/moarch -p {pluginPath} -y --platform {target} {syspkgs}'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
