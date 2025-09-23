@@ -88,8 +88,9 @@ namespace Conda
             string condaPath = Path.Combine(Application.dataPath, "Conda");
             string pluginPath = Path.Combine(condaPath, "Env");
             string response;
-            string url, mambaApp, platform, target;
+            string url, mambaApp, platform, target, syspkgs;
             Architecture processArch = RuntimeInformation.ProcessArchitecture;
+            syspkgs = "";
 #if UNITY_EDITOR_WIN
             url = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64";
             mambaApp = Path.Combine(condaPath, "micromamba.exe");
@@ -111,12 +112,17 @@ namespace Conda
 #elif UNITY_EDITOR_LINUX
             url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
             mambaApp = Path.Combine(condaPath, "micromamba");
+            platform = "linux-64";
 #endif
             if (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE") == null){
                 target = platform;
             } else {
                 target = Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE");
                 Debug.Log($"Conda Architecture Override set to {target}");
+                if (platform.Contains("osx") && target.Contains("linux")){
+                    syspkgs = $"gcc_{target} gxx_{target} sysroot_{target} ";
+                    Debug.Log($" syspkgs set to : {syspkgs}");
+                }
             }
             //Check the Conda environment exists and if it does not not - initialize it
             if (!Directory.Exists(condaPath))
@@ -142,6 +148,17 @@ namespace Conda
                         compiler.Start();
                         compiler.WaitForExit();
                     }
+#elif UNITY_EDITOR_LINUX
+                    using (Process compiler = new Process()) {
+                        compiler.StartInfo.FileName = "/bin/bash";
+                        compiler.StartInfo.Arguments = $"-c \"chmod 766 {mambaApp}  \"";
+                        compiler.StartInfo.UseShellExecute = false;
+                        compiler.StartInfo.RedirectStandardOutput = true;
+                        compiler.StartInfo.CreateNoWindow = true;
+                        compiler.StartInfo.WorkingDirectory = condaPath;
+                        compiler.Start();
+                        compiler.WaitForExit();
+                    }
 #endif
                     Debug.Log($"File downloaded to: ${mambaApp}");
                 }
@@ -158,7 +175,7 @@ namespace Conda
                     compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} create -c conda-forge -p {pluginPath} -y";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge -p {pluginPath} -y --platform {target}'";
+                    compiler.StartInfo.Arguments = $"-c '{mambaApp} create -c conda-forge/{target} -p {pluginPath} -y --platform {target} {syspkgs}'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
@@ -181,7 +198,7 @@ namespace Conda
                 compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {mambaApp} install -c conda-forge -p {pluginPath} --copy {install_string} -y -v *>&1";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} -c conda-forge/noarch -p '{pluginPath}' '{install_string}' -y --json \" ";
+                compiler.StartInfo.Arguments = $" -c \"'{mambaApp}' install -c conda-forge/{target} -c conda-forge/noarch -p '{pluginPath}' '{install_string}' --copy -y --json \" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
