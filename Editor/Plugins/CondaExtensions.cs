@@ -89,7 +89,9 @@ namespace Conda
     {
         private static string condaPath => Path.Combine(Application.dataPath, "Conda");
         private static string pluginPath => Path.Combine(condaPath, "Plugins");
-        private static string condaDefault => Path.Combine(pluginPath, "x64");
+        private static string condaDefault => Path.Combine(pluginPath,
+            RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64"
+         ) ;
 #if UNITY_EDITOR_WIN
         public static string condaLibrary => Path.Combine(condaDefault, "Library");
         public static string condaShared => Path.Combine(condaLibrary, "share");
@@ -258,8 +260,6 @@ namespace Conda
 
         public static CondaList Info()
         {
-            string condaPath = Path.Combine(Application.dataPath, "Conda");
-            string pixiApp = Path.Combine(Application.dataPath, "Conda", "pixi");
             string response;
             string error;
             EditorUtility.DisplayProgressBar("Conda Package Manager", "Getting Package List", .5f);
@@ -267,10 +267,10 @@ namespace Conda
             {
 #if UNITY_EDITOR_WIN
                 compiler.StartInfo.FileName = "powershell.exe";
-                compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {pixiApp}.exe list --json ";
+                compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {pixiApp} list --json ";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c '{pixiApp}.exe list --json ' ";
+                compiler.StartInfo.Arguments = $" -c '{pixiApp} list --json ' ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
