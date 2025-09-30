@@ -96,9 +96,9 @@ namespace Conda
         public static string condaBin => Path.Combine(condaLibrary, "bin");
         private static string  pixiApp => Path.Combine(condaPath, "pixi.exe");
 #else
-        public static string condaLibrary => condaDefault;
+        public static string condaLibrary => Path.Combine(condaLibrary, "lib");
         public static string condaShared => Path.Combine(condaLibrary, "share");
-        public static string condaBin => Path.Combine(condaLibrary, "lib");
+        public static string condaBin => Path.Combine(condaLibrary, "bin");
         private static string  pixiApp => Path.Combine(condaPath, "pixi");
 #endif
 
