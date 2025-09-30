@@ -96,9 +96,9 @@ namespace Conda
         public static string condaBin => Path.Combine(condaLibrary, "bin");
         private static string  pixiApp => Path.Combine(condaPath, "pixi.exe");
 #else
-        public static string condaLibrary => Path.Combine(condaLibrary, "lib");
-        public static string condaShared => Path.Combine(condaLibrary, "share");
-        public static string condaBin => Path.Combine(condaLibrary, "bin");
+        public static string condaLibrary => Path.Combine(condaDefault, "lib");
+        public static string condaShared => Path.Combine(condaDefault, "share");
+        public static string condaBin => Path.Combine(condaDefault, "bin");
         private static string  pixiApp => Path.Combine(condaPath, "pixi");
 #endif
 
@@ -369,17 +369,6 @@ namespace Conda
                     new Regex("\\.dylib$"),
                     new Regex("\\.meta$"),
                     });
-                foreach (var dir in Directory.GetDirectories(condaLibrary)){
-                    try
-                    {
-                        Directory.Delete(dir,true);
-                        Console.WriteLine($"Deleted directory: {dir}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Failed to delete directory {dir}: {ex.Message}");
-                    }
-                }
             }
 #endif
         }
