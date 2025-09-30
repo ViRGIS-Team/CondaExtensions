@@ -115,14 +115,14 @@ namespace Conda
             url = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-pc-windows-msvc.exe";
             platform = "win-64";
 #elif UNITY_EDITOR_OSX
-            if (processArch == Architecture.Arm64)x`
+            if (processArch == Architecture.Arm64)
             {
-                url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-arm64";
+                url =  "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-aarch64-apple-darwin";
                 platform = "osx-arm64";
             }
             else
             {
-                url =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-osx-64";
+                url =  "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-apple-darwin";
                 platform = "osx-64";
             }
 #elif UNITY_EDITOR_LINUX
@@ -160,7 +160,7 @@ namespace Conda
 #if UNITY_EDITOR_OSX
                     using (Process compiler = new Process()) {
                         compiler.StartInfo.FileName = "/bin/bash";
-                        compiler.StartInfo.Arguments = $"-c \"chmod 766 {pixiApp} && xattr -d \"com.apple.quarantine\" {mambaApp} \"";
+                        compiler.StartInfo.Arguments = $"-c \"chmod 766 {pixiApp} && xattr -d \"com.apple.quarantine\" {pixiApp} \"";
                         compiler.StartInfo.UseShellExecute = false;
                         compiler.StartInfo.RedirectStandardOutput = true;
                         compiler.StartInfo.CreateNoWindow = true;
@@ -364,7 +364,7 @@ namespace Conda
                 });
             if (Directory.Exists(condaLibrary))
             {
-                RecurseAndClean(path, new Regex[] {
+                RecurseAndClean(condaLibrary, new Regex[] {
                     new Regex("\\.lib$"),
                     new Regex("\\.dylib$"),
                     new Regex("\\.meta$"),
