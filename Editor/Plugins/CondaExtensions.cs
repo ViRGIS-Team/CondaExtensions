@@ -212,7 +212,7 @@ namespace Conda
                 {
 #if UNITY_EDITOR_WIN
                     compiler.StartInfo.FileName = "powershell.exe";
-                    compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} --platform {target} init {condaPath}";
+                    compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} init --platform {target} {condaPath}";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
                     compiler.StartInfo.Arguments = $"-c '{pixiApp} init --platform {target} {condaPath}'";
