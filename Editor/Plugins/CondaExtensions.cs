@@ -89,9 +89,25 @@ namespace Conda
     {
         private static string condaPath => Path.Combine(Application.dataPath, "Conda");
         private static string pluginPath => Path.Combine(condaPath, "Plugins");
-        private static string condaDefault => Path.Combine(pluginPath,
-            RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64"
-         ) ;
+        private static string condaDefault {
+            get
+            {
+                switch (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE"))
+                {
+                    case "osx-64":
+                    case "win-64":
+                    case "linux-64":
+                        return Path.Combine(pluginPath, "x64" );
+                    case "osx-arm64":
+                    case "linux-aarch64":
+                        return Path.Combine(pluginPath, "arm64");
+                    default :
+                        return Path.Combine(pluginPath,
+                            RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64"
+                        );
+                }
+            }
+        }
 #if UNITY_EDITOR_WIN
         public static string condaLibrary => Path.Combine(condaDefault, "Library");
         public static string condaShared => Path.Combine(condaLibrary, "share");
@@ -150,7 +166,8 @@ namespace Conda
             {
                 Directory.CreateDirectory(pluginPath);
             };
-            ;
+            Debug.Log($"Platform : {platform}");
+            Debug.Log($"Target : {target}");
             if (!System.IO.File.Exists(pixiApp))
             {
                 // need to install micromamba which is totally stand-alone
@@ -195,10 +212,10 @@ namespace Conda
                 {
 #if UNITY_EDITOR_WIN
                     compiler.StartInfo.FileName = "powershell.exe";
-                    compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} init {condaPath}";
+                    compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} --platform {target} init {condaPath}";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $"-c '{pixiApp} init {condaPath}'";
+                    compiler.StartInfo.Arguments = $"-c '{pixiApp} init --platform {target} {condaPath}'";
 #endif
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
@@ -218,10 +235,10 @@ namespace Conda
             {
 #if UNITY_EDITOR_WIN
                 compiler.StartInfo.FileName = "powershell.exe";
-                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} add --no-install  {install_string}";
+                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} add --no-install  --platform {target} {install_string}";
 #else
                 compiler.StartInfo.FileName = "/bin/bash";
-                compiler.StartInfo.Arguments = $" -c \"{pixiApp} add --no-install  {install_string}\" ";
+                compiler.StartInfo.Arguments = $" -c \"{pixiApp} add --no-install  --platform {target} {install_string}\" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
@@ -238,10 +255,10 @@ namespace Conda
             {
 #if UNITY_EDITOR_WIN
                 compiler.StartInfo.FileName = "powershell.exe";
-                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} exec pixi-install-to-prefix --no-activation-scripts {condaDefault}";
+                compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {pixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target} {condaDefault}";
 #else
                     compiler.StartInfo.FileName = "/bin/bash";
-                    compiler.StartInfo.Arguments = $" -c \"{pixiApp} exec pixi-install-to-prefix --no-activation-scripts {condaDefault}\" ";
+                    compiler.StartInfo.Arguments = $" -c \"{pixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target} {condaDefault}\" ";
 #endif
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
