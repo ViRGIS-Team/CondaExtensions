@@ -1,14 +1,15 @@
-using UnityEngine;
-using UnityEditor;
-using System.IO;
-using System.Diagnostics;
 using System;
-using Debug = UnityEngine.Debug;
-using System.Net;
-using System.Linq;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using UnityEditor;
+using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
+using Debug = UnityEngine.Debug;
 
 
 #if UNITY_EDITOR
@@ -99,8 +100,9 @@ namespace Conda
                     case "linux-64":
                         return Path.Combine(pluginPath, "x64" );
                     case "osx-arm64":
-                    case "linux-aarch64":
                         return Path.Combine(pluginPath, "arm64");
+                    case "linux-aarch64":
+                        return Path.Combine(pluginPath, "Android");
                     default :
                         return Path.Combine(pluginPath,
                             RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "arm64" : "x64"
@@ -347,20 +349,43 @@ namespace Conda
 
         public static void TreeShake()
         {
+            string target;
 #if UNITY_EDITOR_WIN
-            RecurseAndClean(condaDefault, new Regex[] {
+            string platform = "win";
+#else
+            string platform = "unix";
+#endif
+
+            switch (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE"))
+            {
+                case "osx-64":
+                case "osx-arm64":
+                case "linux-64":
+                case "linux-aarch64":
+                    target = "unix";
+                    break;
+                case "win-64":
+                    target = "win";
+                    break;
+                default:
+                    target = platform;
+                    break;
+            }
+            if (target == "win")
+            {
+                RecurseAndClean(condaDefault, new Regex[] {
                     new Regex("^\\..*"),
                     new Regex("^conda-meta$"),
                     new Regex("\\.meta$"),
                     new Regex("^Library$"),
                     new Regex("\\.txt$"),
                 });
-            if (Directory.Exists(condaLibrary))
-                RecurseAndClean(condaLibrary, new Regex[]{
+                if (Directory.Exists(condaLibrary))
+                    RecurseAndClean(condaLibrary, new Regex[]{
                     new Regex("^bin$")
                 });
-            if (Directory.Exists(condaBin))
-                RecurseAndClean(condaBin, new Regex[] {
+                if (Directory.Exists(condaBin))
+                    RecurseAndClean(condaBin, new Regex[] {
                     new Regex("\\.dll$"),
                     new Regex("\\.exe$"),
                     new Regex("\\.json$"),
@@ -371,23 +396,26 @@ namespace Conda
                         new Regex("^vcr"),
                         new Regex("^msvcp"),
                     });
-#else
-            RecurseAndClean(condaDefault, new Regex[] {
+            }
+            else
+            {
+                RecurseAndClean(condaDefault, new Regex[] {
                     new Regex("^\\..*"),
                     new Regex("^conda-meta$"),
                     new Regex("\\.meta$"),
                     new Regex("^bin$"),
                     new Regex("^lib$"),
                 });
-            if (Directory.Exists(condaLibrary))
-            {
-                RecurseAndClean(condaLibrary, new Regex[] {
+                if (Directory.Exists(condaLibrary))
+                {
+                    RecurseAndClean(condaLibrary, new Regex[] {
                     new Regex("\\.lib$"),
                     new Regex("\\.dylib$"),
+                    new Regex("\\.so$"),
                     new Regex("\\.meta$"),
                     });
+                }
             }
-#endif
         }
 
         public static void RecurseAndClean(string path, Regex[] excludes, Regex[] includes = null)
