@@ -204,7 +204,7 @@ namespace Conda
                 m_Platform = Platform.MacArm64;
                 m_Target = "osx-arm64";
                 m_TargetOs = OS.Unix;
-                m_PixiApp = Path.Combine(m_CondaPath, "pixi")
+                m_PixiApp = Path.Combine(m_CondaPath, "pixi");
             }
             else
             {
@@ -212,14 +212,14 @@ namespace Conda
                 m_Platform = Platform.Mac64;
                 m_Target = "osx-64";
                 m_TargetOs = OS.Unix;
-                m_PixiApp = Path.Combine(m_CondaPath, "pixi")
+                m_PixiApp = Path.Combine(m_CondaPath, "pixi");
             }
 #elif UNITY_EDITOR_LINUX
             m_PixiUrl =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
             m_Platform = Platform.Linux64;
             m_Target = "linux-64";
             m_TargetOs = OS.Unix;
-            m_PixiApp = Path.Combine(m_CondaPath, "pixi")
+            m_PixiApp = Path.Combine(m_CondaPath, "pixi");
 #endif
             switch (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE"))
             {
