@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +16,39 @@ using Debug = UnityEngine.Debug;
 #if UNITY_EDITOR
 namespace Conda
 {
+
+    [Serializable]
+    public class ConfigFile
+    {
+        [Serializable]
+        public class Clean
+        {
+            public string[] path;
+            public string[] includes;
+            public string[] excludes;
+        }
+
+        [Serializable]
+        public class Package : IEquatable<Package>
+        {
+            public string Name;
+            public Clean[] Cleans;
+            public string[] Shared_Datas;
+
+            public bool Equals(Package other)
+            {
+                return Name == other.Name;
+            }
+        }
+
+        public List<Package> Packages;
+
+        public ConfigFile()
+        {
+            Packages = new ();
+        }
+    }
+
     [Serializable]
     public class CondaItem
     {
@@ -34,38 +68,56 @@ namespace Conda
     {
         public CondaItem[] Items;
     }
-
     [Serializable]
-    class CondaInfo
-    {
-        public string platform;
-        public string[] virtual_packages;
-        public string version;
-        public string cache_dir;
-        public string cache_size;
-    }
-
-    class CondaEnv
+    public class PixiEnv
     {
         public string name;
         public string[] features;
+        public string solve_group;
+        public string environment_size;
+        public string[] dependencies;
+        public string[] platforms;
     }
 
-    enum Platform 
+    [Serializable]
+    public class PixiProject
+    {
+        public string name;
+        public string manifest_path;
+        public string last_updated;
+    }
+
+    [Serializable]
+    public class PixiInfo
+    {
+        public string platform;
+        public string version;
+        public PixiProject project_info;
+        public PixiEnv[] environments_info;
+    }
+
+    public enum Platform 
     {
         None,
-        Win64,
-        Linux64,
-        Mac64,
-        MacArm64,
+        Windows_x64,
+        Linux_x64,
+        Mac_x64,
+        Mac_Arm64,
+        Linux_Arm64,
+        Android_Arm64
     };
 
-    enum OS
+    static class PlatformExtensions
     {
-        None,
-        Win,
-        Unix,
-        Android
+        public static string ToCondaString(this Platform platform) => platform switch
+        {
+            Platform.Windows_x64 => "win-64",
+            Platform.Mac_x64 => "osx-64",
+            Platform.Linux_x64 => "linux-64",
+            Platform.Mac_Arm64 => "osx-arm64",
+            Platform.Linux_Arm64 => "linux-aarch64",
+            _ => platform.ToString()
+        };
     }
 
     public class PathEqualityComparer : IEqualityComparer<string>
@@ -105,181 +157,181 @@ namespace Conda
 
     public class CondaApp
     {
+        public const string TARGETS = "--platform win-64 --platform osx-64 --platform osx-arm64 --platform linux-64";
+        public Platform[] TARGETLIST = new Platform[] { 
+            Platform.Windows_x64,
+            Platform.Mac_x64,
+            Platform.Mac_Arm64,
+            Platform.Linux_x64};
+        public string CondaPath;
+        public string PluginPath;
 
         Platform m_Platform = Platform.None;
-        OS m_TargetOs = OS.None;
         Architecture m_ProcessArch;
         string m_PixiUrl;
         string m_PixiApp;
-        string m_Target;
-        string m_CondaPath;
-        string m_PluginPath; 
-        string m_CondaDefault(string target = "") {
+        Platform m_Target;
+
+        ConfigFile m_Config;
+
+        string CondaDefault(Platform target) {
             switch (target)
             {
-                case "osx-64":
-                case "win-64":
-                case "linux-64":
-                    return Path.Combine(m_PluginPath, "x64");
-                case "osx-arm64":
-                    return Path.Combine(m_PluginPath, "arm64");
-                case "linux-aarch64":
-                    return Path.Combine(m_PluginPath, "Android", "arm64-v8a");
+                case Platform.Mac_x64:
+                    return Path.Combine(PluginPath, "OSX", "x64");
+                case Platform.Windows_x64:
+                    return Path.Combine(PluginPath, "Windows", "x64");
+                case Platform.Linux_x64:
+                    return Path.Combine(PluginPath, "Linux", "x64");
+                case Platform.Mac_Arm64:
+                    return Path.Combine(PluginPath, "OSX", "arm64");
+                //case Platform.:
+                //    return Path.Combine(PluginPath, "Android", "arm64-v8a");
                 default:
-                    return Path.Combine(m_PluginPath,
-                        m_ProcessArch == Architecture.Arm64 ? "arm64" : "x64"
-                    );
+                    switch (m_Platform)
+                    {
+                        case Platform.Windows_x64:
+                            return Path.Combine(PluginPath, "Windows", "x64");
+                        case Platform.Mac_x64:
+                            return Path.Combine(PluginPath, "OSX", "x64");
+                        case Platform.Mac_Arm64:
+                            return Path.Combine(PluginPath, "OSX", "arm64");
+                        case Platform.Linux_x64:
+                            return Path.Combine(PluginPath, "Linux", "x64");
+                        default:
+                            throw new Exception("Conda Platform is invalid");
+                    }
             }
         }
 
-        public string condaLibrary
+        public string condaLibrary(Platform target)
         {
-            get
+            switch (target)
             {
-                switch (m_TargetOs)
-                {
-                    case OS.Win:
-                        return Path.Combine(m_CondaDefault(m_Target), "Library");
-                    case OS.Unix:
-                        return Path.Combine(m_CondaDefault(m_Target), "lib");
-                    case OS.Android:
-                        return Path.Combine(m_CondaDefault(m_Target), "lib");
-                    default:
-                        throw new Exception("No Target Set when requesting Library Path");
-                }
+                case Platform.Windows_x64:
+                    return Path.Combine(CondaDefault(target), "Library");
+                case Platform.Mac_x64:
+                case Platform.Mac_Arm64:
+                case Platform.Linux_x64:
+                case Platform.Linux_Arm64:
+                    return Path.Combine(CondaDefault(target), "lib");
+                default:
+                    throw new Exception("No Target Set when requesting Library Path");
             }
         }
 
-        public string condaShared
+        public string condaShared(Platform target)
         {
-            get
+            switch (target)
             {
-                switch (m_TargetOs)
-                {
-                    case OS.Win:
-                        return Path.Combine(condaLibrary, "share");
-                    case OS.Unix:
-                        return Path.Combine(m_CondaDefault(m_Target), "share");
-                    case OS.Android:
-                        return Path.Combine(m_CondaDefault(m_Target), "share");
-                    default:
-                        throw new Exception("No Target Set when requesting Shared Path");
-                }
+                case Platform.Windows_x64:
+                    return Path.Combine(condaLibrary(target), "share");
+                case Platform.Mac_x64:
+                case Platform.Mac_Arm64:
+                case Platform.Linux_x64:
+                case Platform.Linux_Arm64:
+                    return Path.Combine(CondaDefault(m_Target), "share");
+                default:
+                    throw new Exception("No Target Set when requesting Shared Path");
             }
         }
             
-        public string condaBin
+        public string condaBin(Platform target)
         {
-            get
+            switch (target)
             {
-                switch (m_TargetOs)
-                {
-                    case OS.Win:
-                        return Path.Combine(condaLibrary, "bin"); ;
-                    case OS.Unix:
-                        return Path.Combine(m_CondaDefault(m_Target), "bin");
-                    case OS.Android:
-                        return Path.Combine(m_CondaDefault(m_Target), "bin");
-                    default:
-                        throw new Exception("No Target Set when requesting Binary Path");
-                }
+                case Platform.Windows_x64:
+                    return Path.Combine(condaLibrary(target), "bin"); ;
+                case Platform.Mac_x64:
+                case Platform.Mac_Arm64:
+                case Platform.Linux_x64:
+                case Platform.Linux_Arm64:
+                    return Path.Combine(CondaDefault(target), "bin");
+                default:
+                    throw new Exception("No Target Set when requesting Binary Path");
             }
         }
-        
+
         public CondaApp()
         {
             m_ProcessArch = RuntimeInformation.ProcessArchitecture;
-            m_CondaPath = Path.Combine(Application.dataPath, "Conda");
-            m_PluginPath = Path.Combine(m_CondaPath, "Plugins");
-#if UNITY_EDITOR_WIN
-            m_PixiUrl = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-pc-windows-msvc.exe";
-            m_Platform = Platform.Win64;
-            m_Target = "win-64";
-            m_TargetOs = OS.Win;
-            m_PixiApp = Path.Combine(m_CondaPath, "pixi.exe");
-#elif UNITY_EDITOR_OSX
-            if (m_ProcessArch == Architecture.Arm64)
+            CondaPath = Path.Combine(Application.dataPath, "Conda");
+            PluginPath = Path.Combine(CondaPath, "Plugins");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                m_PixiUrl =  "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-aarch64-apple-darwin";
-                m_Platform = Platform.MacArm64;
-                m_Target = "osx-arm64";
-                m_TargetOs = OS.Unix;
-                m_PixiApp = Path.Combine(m_CondaPath, "pixi");
-            }
-            else
+                m_PixiUrl = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-pc-windows-msvc.exe";
+                m_Platform = Platform.Windows_x64;
+                m_PixiApp = Path.Combine(CondaPath, "pixi.exe");
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                m_PixiUrl =  "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-apple-darwin";
-                m_Platform = Platform.Mac64;
-                m_Target = "osx-64";
-                m_TargetOs = OS.Unix;
-                m_PixiApp = Path.Combine(m_CondaPath, "pixi");
+                if (m_ProcessArch == Architecture.Arm64)
+                {
+                    m_PixiUrl = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-aarch64-apple-darwin";
+                    m_Platform = Platform.Mac_Arm64;
+                    m_PixiApp = Path.Combine(CondaPath, "pixi");
+                }
+                else
+                {
+                    m_PixiUrl = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-apple-darwin";
+                    m_Platform = Platform.Mac_x64;
+                    m_PixiApp = Path.Combine(CondaPath, "pixi");
+                }
             }
-#elif UNITY_EDITOR_LINUX
-            m_PixiUrl =  "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
-            m_Platform = Platform.Linux64;
-            m_Target = "linux-64";
-            m_TargetOs = OS.Unix;
-            m_PixiApp = Path.Combine(m_CondaPath, "pixi");
-#endif
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                m_PixiUrl = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
+                m_Platform = Platform.Linux_x64;
+                m_PixiApp = Path.Combine(CondaPath, "pixi");
+            }
+
             switch (Environment.GetEnvironmentVariable("CONDA_ARCH_OVERRIDE"))
             {
                 case "osx-64":
-                    m_Target = "osx-64";
-                    m_TargetOs = OS.Unix;
+                    m_Target = Platform.Mac_x64;
                     break;
                 case "osx-arm64":
-                    m_Target = "osx-arm64";
-                    m_TargetOs = OS.Unix;
+                    m_Target = Platform.Mac_Arm64;
                     break;
                 case "linux-64":
-                    m_Target = "linux-64";
-                    m_TargetOs = OS.Unix;
+                    m_Target = Platform.Linux_x64;
                     break;
                 case "linux-aarch64":
-                    m_Target = "linux-aarch64";
-                    m_TargetOs = OS.Android;
+                    m_Target = Platform.Linux_Arm64;
                     break;
                 case "win-64":
-                    m_Target = "win-64";
-                    m_TargetOs = OS.Win;
+                    m_Target = Platform.Windows_x64;
                     break;
                 default:
+                    m_Target = m_Platform;
                     break;
             }
-            
-            Debug.Log($"Platform : {m_Platform.ToString()}");
-            Debug.Log($"Target : {m_Target}");
-        }
 
-        public string Install(string install_string)
-        {
-
-            Debug.Log($"Starting Install for {install_string}");
-
-            string response;
-            
-            //Check the Conda environment exists and if it does not not - initialize it
-            if (!Directory.Exists(m_CondaPath))
+            if (!Directory.Exists(CondaPath))
             {
-                Directory.CreateDirectory(m_CondaPath);
-            };
-            if (!Directory.Exists(m_PluginPath))
+                Directory.CreateDirectory(CondaPath);
+            }
+            ;
+            if (!Directory.Exists(PluginPath))
             {
-                Directory.CreateDirectory(m_PluginPath);
-            };
+                Directory.CreateDirectory(PluginPath);
+            }
+            ;
 
             if (!File.Exists(m_PixiApp))
             {
                 // need to install micromamba which is totally stand-alone
-
+                Debug.Log($"Platform : {m_Platform.ToCondaString()}");
+                if (m_Target != m_Platform)
+                {
+                    Debug.Log($"Target : {m_Target.ToCondaString()}");
+                }
                 using (WebClient client = new WebClient())
                 {
                     Debug.Log($"Downloading {m_PixiUrl}");
                     client.DownloadFile(m_PixiUrl, m_PixiApp);
                     switch (m_Platform)
                     {
-                        case Platform.Mac64:
-                        case Platform.MacArm64:
+                        case Platform.Mac_x64:
+                        case Platform.Mac_Arm64:
                             using (Process compiler = new Process())
                             {
                                 compiler.StartInfo.FileName = "/bin/bash";
@@ -288,24 +340,24 @@ namespace Conda
                                 compiler.StartInfo.RedirectStandardOutput = true;
                                 compiler.StartInfo.RedirectStandardError = true;
                                 compiler.StartInfo.CreateNoWindow = true;
-                                compiler.StartInfo.WorkingDirectory = m_CondaPath;
+                                compiler.StartInfo.WorkingDirectory = CondaPath;
                                 compiler.Start();
                                 compiler.WaitForExit();
-                                if ( compiler.ExitCode != 0 )
+                                if (compiler.ExitCode != 0)
                                     throw new Exception(compiler.StandardError.ReadToEnd());
                             }
                             ;
                             break;
-                        case Platform.Linux64:
+                        case Platform.Linux_x64:
                             using (Process compiler = new Process())
                             {
                                 compiler.StartInfo.FileName = "/bin/bash";
                                 compiler.StartInfo.Arguments = $"-c \"chmod 766 {m_PixiApp}  \"";
                                 compiler.StartInfo.UseShellExecute = false;
                                 compiler.StartInfo.RedirectStandardOutput = true;
-                                compiler.StartInfo.RedirectStandardError= true;
+                                compiler.StartInfo.RedirectStandardError = true;
                                 compiler.StartInfo.CreateNoWindow = true;
-                                compiler.StartInfo.WorkingDirectory = m_CondaPath;
+                                compiler.StartInfo.WorkingDirectory = CondaPath;
                                 compiler.Start();
                                 compiler.WaitForExit();
                                 if (compiler.ExitCode != 0)
@@ -318,91 +370,137 @@ namespace Conda
                     }
                     Debug.Log($"File downloaded to: ${m_PixiApp}");
                 }
-            };
+            }
 
-            //Check if there is a working Conda Env 
-            //if (!Envs().envs.Contains(pluginPath, new PathEqualityComparer()))
-            if (!File.Exists(Path.Combine(m_CondaPath, "pixi.toml")))
+            //Check if there is a working Pixi Env
+            // If not (i.e. there is no pixi.lock file - init 
+            if (!File.Exists(Path.Combine(CondaPath, "pixi.toml")))
             {
                 //run the Mamba create env command
                 using (Process compiler = new Process())
                 {
-                    switch(m_Platform){
-                        case Platform.Win64:
+                    switch (m_Platform)
+                    {
+                        case Platform.Windows_x64:
                             compiler.StartInfo.FileName = "powershell.exe";
-                            compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} init --platform {m_Target} {m_CondaPath}";
+                            compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} init {TARGETS} {CondaPath}";
                             break;
                         default:
                             compiler.StartInfo.FileName = "/bin/bash";
-                            compiler.StartInfo.Arguments = $"-c '{m_PixiApp} init --platform {m_Target} {m_CondaPath}'";
+                            compiler.StartInfo.Arguments = $"-c '{m_PixiApp} init {TARGETS} {CondaPath}'";
                             break;
                     }
                     compiler.StartInfo.UseShellExecute = false;
                     compiler.StartInfo.RedirectStandardOutput = true;
                     compiler.StartInfo.RedirectStandardError = true;
                     compiler.StartInfo.CreateNoWindow = true;
-                    compiler.StartInfo.WorkingDirectory = m_CondaPath;
+                    compiler.StartInfo.WorkingDirectory = CondaPath;
                     compiler.Start();
-                    response = compiler.StandardOutput.ReadToEnd();
+                    //response = compiler.StandardOutput.ReadToEnd();
                     compiler.WaitForExit();
                     if (compiler.ExitCode != 0)
                         throw new Exception(compiler.StandardError.ReadToEnd());
                 }
-                Debug.Log($"Init response {response}");
             }
+            if (File.Exists(Path.Combine(CondaPath, ".config.json")))
+            {
+                string json = File.ReadAllText(Path.Combine(CondaPath, ".config.json"));
+                m_Config = JsonConvert.DeserializeObject<ConfigFile>(json);
+            }
+            else
+            {
+                m_Config = new();
+            }
+        }
 
-            //Run the Mamba install process using the package specific install script
-            using (Process compiler = new Process())
+        private void SaveConfig()
+        {
+            try
             {
-                switch (m_Platform)
-                {
-                    case Platform.Win64:
-                        compiler.StartInfo.FileName = "powershell.exe";
-                        compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} add --no-install  --platform {m_Target} {install_string}";
-                        break;
-                    default:
-                        compiler.StartInfo.FileName = "/bin/bash";
-                        compiler.StartInfo.Arguments = $" -c \"{m_PixiApp} add --no-install  --platform {m_Target} {install_string}\" ";
-                        break;
-                }
-                compiler.StartInfo.UseShellExecute = false;
-                compiler.StartInfo.RedirectStandardOutput = true;
-                compiler.StartInfo.RedirectStandardError= true;
-                compiler.StartInfo.CreateNoWindow = true;
-                compiler.StartInfo.WorkingDirectory = m_CondaPath;
-                compiler.Start();
-                response = compiler.StandardOutput.ReadToEnd();
-                compiler.WaitForExit();
-                if (compiler.ExitCode != 0)
-                    throw new Exception(compiler.StandardError.ReadToEnd());
+                string json = JsonConvert.SerializeObject(m_Config, Formatting.Indented);
+                File.WriteAllText(Path.Combine(CondaPath, ".config.json"), json);
             }
-            Debug.Log($"Add response {response}");
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        public void Add(string install_string, ConfigFile.Package package_details = null)
+        {
+
+            Debug.Log($"Starting Package Add for {install_string}");
+ 
+            //Run the Pixi Add process using the package specific install script
             using (Process compiler = new Process())
             {
                 switch (m_Platform)
                 {
-                    case Platform.Win64:
+                    case Platform.Windows_x64:
                         compiler.StartInfo.FileName = "powershell.exe";
-                        compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {m_Target} {m_CondaDefault(m_Target)}";
+                        compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} add --no-install  {TARGETS} {install_string}";
                         break;
                     default:
                         compiler.StartInfo.FileName = "/bin/bash";
-                        compiler.StartInfo.Arguments = $" -c \"{m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {m_Target} {m_CondaDefault(m_Target)}\" ";
+                        compiler.StartInfo.Arguments = $" -c \"{m_PixiApp} add --no-install  {TARGETS} {install_string}\" ";
                         break;
                 }
                 compiler.StartInfo.UseShellExecute = false;
                 compiler.StartInfo.RedirectStandardOutput = true;
                 compiler.StartInfo.RedirectStandardError = true;
                 compiler.StartInfo.CreateNoWindow = true;
-                compiler.StartInfo.WorkingDirectory = m_CondaPath;
+                compiler.StartInfo.WorkingDirectory = CondaPath;
                 compiler.Start();
-                response = compiler.StandardOutput.ReadToEnd();
+                //response = compiler.StandardOutput.ReadToEnd();
                 compiler.WaitForExit();
                 if (compiler.ExitCode != 0)
                     throw new Exception(compiler.StandardError.ReadToEnd());
             }
-            Debug.Log($"Install response {response}");
-            return response;
+
+            // update the config with the package details
+
+            if (package_details != null)
+            {
+                if (m_Config.Packages.Contains(package_details))
+                {
+                    m_Config.Packages[m_Config.Packages.IndexOf(package_details)] = package_details;
+                }
+                else
+                {
+                    m_Config.Packages.Add(package_details);
+                }
+                SaveConfig();
+            }
+            Install(m_Target);
+        }
+
+        public void Install(Platform target)
+        { 
+            using (Process compiler = new Process())
+            {
+                switch (m_Platform)
+                {
+                    case Platform.Windows_x64:
+                        compiler.StartInfo.FileName = "powershell.exe";
+                        compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target.ToCondaString()} {CondaDefault(m_Target)}";
+                        break;
+                    default:
+                        compiler.StartInfo.FileName = "/bin/bash";
+                        compiler.StartInfo.Arguments = $" -c \"{m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target.ToCondaString()} {CondaDefault(m_Target)}\" ";
+                        break;
+                }
+                compiler.StartInfo.UseShellExecute = false;
+                compiler.StartInfo.RedirectStandardOutput = true;
+                compiler.StartInfo.RedirectStandardError = true;
+                compiler.StartInfo.CreateNoWindow = true;
+                compiler.StartInfo.WorkingDirectory = CondaPath;
+                compiler.Start();
+                //compiler.StandardOutput.ReadToEnd();
+                compiler.WaitForExit();
+                if (compiler.ExitCode != 0)
+                    throw new Exception(compiler.StandardError.ReadToEnd());
+            }
+            TreeShake(target);
         }
 
 
@@ -415,7 +513,7 @@ namespace Conda
             {
                 switch (m_Platform)
                 {
-                    case Platform.Win64:
+                    case Platform.Windows_x64:
                         compiler.StartInfo.FileName = "powershell.exe";
                         compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {m_PixiApp} list --json ";
                         break;
@@ -428,7 +526,7 @@ namespace Conda
                 compiler.StartInfo.RedirectStandardOutput = true;
                 compiler.StartInfo.RedirectStandardError = true;
                 compiler.StartInfo.CreateNoWindow = true;
-                compiler.StartInfo.WorkingDirectory = m_CondaPath;
+                compiler.StartInfo.WorkingDirectory = CondaPath;
                 compiler.Start();
                 response = compiler.StandardOutput.ReadToEnd();
                 error = compiler.StandardError.ReadToEnd();
@@ -452,60 +550,79 @@ namespace Conda
             return Array.Exists( items, item => item.name == name && item.version == packageVersion );
         }
 
-        CondaInfo Envs()
+        public void TreeShake( Platform target)
         {
-            string response;
-            EditorUtility.DisplayProgressBar("Conda Package Manager", "Getting Envs List", .5f);
-            using (Process compiler = new Process())
+            string sharedAssets = Application.streamingAssetsPath;
+            if (!Directory.Exists(sharedAssets)) Directory.CreateDirectory(sharedAssets);
+            foreach (ConfigFile.Package package in m_Config.Packages)
             {
-                switch (m_Platform)
+                if (package.Cleans != null && package.Cleans.Length > 0)
                 {
-                    case Platform.Win64:
-                        compiler.StartInfo.FileName = "powershell.exe";
-                        compiler.StartInfo.Arguments = $" -ExecutionPolicy Bypass {m_PixiApp}.exe info --json ";
-                        break;
-                    default:
-                        compiler.StartInfo.FileName = "/bin/bash";
-                        compiler.StartInfo.Arguments = $" -c '{m_PixiApp}.exe info --json ' ";
-                        break;
+                    foreach (ConfigFile.Clean item in package.Cleans)
+                    {
+                        List<Regex> includes = new();
+                        List<Regex> excludes = new();
+                        foreach (string include in item.includes)
+                        {
+                            includes.Add(new Regex(include));
+                        }
+                        foreach (string exclude in item.excludes)
+                        {
+                            excludes.Add(new Regex(exclude));
+                        }
+                        string path = "";
+                        foreach (string component in item.path)
+                        {
+                            switch (component)
+                            {
+                                case "conda_library":
+                                    path = condaLibrary(target);
+                                    break;
+                                case "conda_bin":
+                                    path = condaBin(target);
+                                    break;
+                                case "conda_shared":
+                                    path = condaShared(target);
+                                    break;
+                                default:
+                                    path = Path.Combine(path, component);
+                                    break;
+                            }
+                        }
+                        RecurseAndClean(path, excludes.ToArray(), includes.ToArray());
+                    }
                 }
-                compiler.StartInfo.UseShellExecute = false;
-                compiler.StartInfo.RedirectStandardOutput = true;
-                compiler.StartInfo.RedirectStandardError = true; 
-                compiler.StartInfo.CreateNoWindow = true;
-                compiler.StartInfo.WorkingDirectory = Path.Combine(Application.dataPath, "Conda");
-                compiler.Start();
-                response = compiler.StandardOutput.ReadToEnd();
-                compiler.WaitForExit();
-                if (compiler.ExitCode != 0)
-                    throw new Exception(compiler.StandardError.ReadToEnd());
+                if (package.Shared_Datas != null && package.Shared_Datas.Length > 0)
+                {
+                    foreach (string item in package.Shared_Datas)
+                    {
+                        string dest = Path.Combine(sharedAssets, item);
+                        if (!Directory.Exists(dest)) Directory.CreateDirectory(dest);
+                        if (Directory.Exists(condaShared(target)) && Directory.Exists(Path.Combine(condaShared(target), item)))
+                            foreach (var file in Directory.GetFiles(Path.Combine(condaShared(target), item)))
+                            {
+                                File.Copy(file, Path.Combine(dest, Path.GetFileName(file)), true);
+                            }
+                    }
+                }
             }
-            EditorUtility.ClearProgressBar();
-            return response == "" ? default : JsonUtility.FromJson<CondaInfo>(response);
-        }
-
-        public void TreeShake()
-        {
-            switch (m_TargetOs)
+            switch (target)
             {
-                case OS.Win:
-                    RecurseAndClean(m_CondaDefault(m_Target), new Regex[] {
+                case Platform.Windows_x64:
+                    RecurseAndClean(CondaDefault(target), new Regex[] {
                         new Regex("^\\..*"),
                         new Regex("^conda-meta$"),
                         new Regex("\\.meta$"),
                         new Regex("^Library$"),
                         new Regex("\\.txt$"),
                     });
-                    if (Directory.Exists(condaLibrary))
-                        RecurseAndClean(condaLibrary, new Regex[]{
+                    if (Directory.Exists(condaLibrary(target)))
+                        RecurseAndClean(condaLibrary(target), new Regex[]{
                         new Regex("^bin$")
                     });
-                    if (Directory.Exists(condaBin))
-                        RecurseAndClean(condaBin, new Regex[] {
+                    if (Directory.Exists(condaBin(target)))
+                        RecurseAndClean(condaBin(target), new Regex[] {
                         new Regex("\\.dll$"),
-                        //new Regex("\\.exe$"),
-                        //new Regex("\\.json$"),
-                        //new Regex("\\.txt$"),
                         new Regex("\\.meta$"),
                         }, new Regex[] {
                             new Regex("^api-"),
@@ -513,54 +630,25 @@ namespace Conda
                             new Regex("^msvcp"),
                         });
                     break;
-                case OS.Unix:
-                    RecurseAndClean(m_CondaDefault(m_Target), new Regex[] {
+                case Platform.Mac_x64:
+                case Platform.Mac_Arm64:
+                case Platform.Linux_x64:
+                case Platform.Linux_Arm64:
+                    RecurseAndClean(CondaDefault(target), new Regex[] {
                         new Regex("^\\..*"),
                         new Regex("^conda-meta$"),
                         new Regex("\\.meta$"),
                         new Regex("^bin$"),
                         new Regex("^lib$"),
                     });
-                    if (Directory.Exists(condaLibrary))
+                    if (Directory.Exists(condaLibrary(target)))
                     {
-                        RecurseAndClean(condaLibrary, new Regex[] {
+                        RecurseAndClean(condaLibrary(target), new Regex[] {
                         new Regex("\\.lib$"),
                         new Regex("\\.dylib$"),
                         new Regex("\\.so$"),
                         new Regex("\\.meta$"),
                         });
-                    }
-                    break;
-                case OS.Android:
-                    RecurseAndClean(m_CondaDefault(m_Target), new Regex[] {
-                        new Regex("^\\..*"),
-                        new Regex("^conda-meta$"),
-                        new Regex("\\.meta$"),
-                        new Regex("^bin$"),
-                        new Regex("^lib$"),
-                    });
-                    if (Directory.Exists(condaLibrary))
-                    {
-                        RecurseAndClean(condaLibrary, new Regex[] {
-                        new Regex("\\.so$"),
-                        new Regex("\\.meta$"),
-                        });
-                    }
-
-                    //Set the architecture for all .so to Arm64
-                    string[] pluginFiles = Directory.GetFiles(m_PluginPath, "*.so", SearchOption.AllDirectories);
-                    foreach (string file in pluginFiles)
-                    {
-                        if (file.EndsWith(".meta")) continue;
-
-                        string assetPath = file.Replace(Application.dataPath, "Assets");
-                        var importer = AssetImporter.GetAtPath(assetPath) as PluginImporter;
-
-                        if (importer == null) continue;
-
-                        importer.SetCompatibleWithPlatform(BuildTarget.Android, true);
-                        importer.SetPlatformData(BuildTarget.Android, "CPU", "ARM64");
-                        importer.SaveAndReimport();
                     }
                     break;
             }
@@ -634,6 +722,13 @@ namespace Conda
             window.titleContent.text = "Installed Conda Packages";
             window.Show();
         }
+
+        [MenuItem("Conda/Settings")]
+        static void Settings() 
+        {
+            SettingsWindow window = (SettingsWindow)EditorWindow.GetWindow(typeof(SettingsWindow));
+            window.Show();
+        }
     }
 
     public class ListWindow : EditorWindow
@@ -643,13 +738,191 @@ namespace Conda
 
         private void OnGUI()
         {
-            svposition = GUILayout.BeginScrollView(svposition);
+            svposition = EditorGUILayout.BeginScrollView(svposition);
             if (list != null)
+            {
+                EditorGUILayout.LabelField("Primary Packages :", EditorStyles.largeLabel);
                 foreach (CondaItem item in list.Items)
                 {
-                    GUILayout.Label($"{item.name}\t\t:\t{item.version}");
+                    if (item.is_explicit || item.name == "libgdal")
+                        DrawItemCard(item);
                 }
-            GUILayout.EndScrollView();
+                EditorGUILayout.LabelField("Dependencies :", EditorStyles.largeLabel);
+                foreach (CondaItem item in list.Items)
+                {
+                    if (! item.is_explicit && 
+                        ! item.name.Contains("dotnet") &&
+                        ! item.name.StartsWith("vc") &&
+                        ! item.name.StartsWith("vs"))
+                        DrawItemCard(item);
+                }
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawItemCard(CondaItem item)
+        {
+            EditorGUILayout.BeginHorizontal("box", GUILayout.Width(200), GUILayout.Height(20));
+            EditorGUILayout.LabelField(item.name, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(item.version);
+
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    public class SettingsWindow : EditorWindow
+    {
+        enum PlatformStatus
+        {
+            NotInstalled,
+            Installed
+        }
+        
+        [System.Serializable]
+        class PlatformData
+        {
+            public Platform platform;
+            public PlatformStatus status;
+        }
+
+        private List<PlatformData> m_Platforms = new List<PlatformData>();
+        private Vector2 m_ScrollPos;
+        private CondaApp m_Conda;
+
+        private void OnEnable()
+        {
+            m_Conda = new();
+            RenewPlatforms();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.LabelField("Environment Manager", EditorStyles.boldLabel);
+            EditorGUILayout.Space();
+
+            m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos);
+
+            foreach (var platform in m_Platforms)
+            {
+                DrawEnvironmentCard(platform);
+
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void RenewPlatforms() 
+        {
+            if (!Directory.Exists(m_Conda.PluginPath))
+            {
+                m_Platforms = new();
+                foreach(Platform platform in m_Conda.TARGETLIST)
+                {
+                    m_Platforms.Add(new PlatformData()
+                    {
+                        platform = platform,
+                        status = PlatformStatus.NotInstalled,
+                    });
+                }
+                return;
+            }
+            m_Platforms = new();
+            string[] dlist =  Directory.GetDirectories(m_Conda.PluginPath);
+            foreach (Platform platform in m_Conda.TARGETLIST)
+            {
+                PlatformStatus status = PlatformStatus.NotInstalled;
+                switch (platform)
+                {
+                    case Platform.Windows_x64:
+                        if (Array.Exists(dlist, item => 
+                                Path.GetFileName(item) == "Windows" &&
+                                Directory.Exists(Path.Combine(item, "x64"))
+                            ))
+                        {
+                            status = PlatformStatus.Installed;
+                        }
+                        break;
+                    case Platform.Mac_x64:
+                        if (Array.Exists(dlist, item =>
+                                Path.GetFileName(item) == "OSX" &&
+                                Directory.Exists(Path.Combine(item, "x64"))
+                            ))
+                        {
+                            status = PlatformStatus.Installed;
+                        }
+                        break;
+                    case Platform.Linux_x64:
+                        if (Array.Exists(dlist, item =>
+                                Path.GetFileName(item) == "Linux" &&
+                                Directory.Exists(Path.Combine(item, "x64"))
+                            ))
+                        {
+                            status = PlatformStatus.Installed;
+                        }
+                        break;
+                    case Platform.Mac_Arm64:
+                        if (Array.Exists(dlist, item =>
+                                Path.GetFileName(item) == "OSX" &&
+                                Directory.Exists(Path.Combine(item, "arm64"))
+                            ))
+                        {
+                            status = PlatformStatus.Installed;
+                        }
+                        break;
+                }
+                m_Platforms.Add(new PlatformData()
+                {
+                    platform = platform,
+                    status = status
+                });
+            }
+            return;
+        }
+
+        private void DrawEnvironmentCard(PlatformData platform)
+        {
+            EditorGUILayout.BeginHorizontal("box", GUILayout.Width(200), GUILayout.Height(30));
+
+            EditorGUILayout.LabelField(platform.platform.ToString(), EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(platform.status == PlatformStatus.Installed ? "Installed" : "Not Installed");
+
+
+
+            if (GUILayout.Button("Install"))
+            {
+                m_Conda.Install(platform.platform);
+            }
+            if (GUILayout.Button("Update"))
+            {
+                m_Conda.Install(platform.platform);
+            }
+            if (GUILayout.Button("Uninstall"))
+            {
+                switch (platform.platform) {
+                    case Platform.Windows_x64:
+                        if (Directory.Exists(Path.Combine(m_Conda.PluginPath, "Windows"))){
+                            Directory.Delete(Path.Combine(m_Conda.PluginPath, "Windows"), true);
+                        }
+                        break;
+                    case Platform.Mac_x64:
+                        if (Directory.Exists(Path.Combine(m_Conda.PluginPath, "OSX"))){
+                            Directory.Delete(Path.Combine(m_Conda.PluginPath, "Windows"), true);
+                        }
+                        break;
+                    case Platform.Linux_x64:
+                        if (Directory.Exists(Path.Combine(m_Conda.PluginPath, "Linux"))){
+                            Directory.Delete(Path.Combine(m_Conda.PluginPath, "Linux"), true);
+                        }
+                        break;
+                    case Platform.Mac_Arm64:
+                        if (Directory.Exists(Path.Combine(m_Conda.PluginPath, "OSX")))
+                        {
+                            Directory.Delete(Path.Combine(m_Conda.PluginPath, "Windows"), true);
+                        }
+                        break;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
         }
     }
 }
