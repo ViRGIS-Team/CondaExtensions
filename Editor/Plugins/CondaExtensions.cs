@@ -697,7 +697,6 @@ namespace Conda
                         new Regex("^\\..*"),
                         new Regex("^conda-meta$"),
                         new Regex("\\.meta$"),
-                        new Regex("^bin$"),
                         new Regex("^lib$"),
                     });
                     if (Directory.Exists(condaLibrary(target)))
