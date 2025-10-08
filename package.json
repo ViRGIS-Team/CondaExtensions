@@ -15,5 +15,6 @@
   },
   "hideInEditor": false,
   "dependencies": {
+    "com.google.external-dependency-manager": "1.2.186"
   }
 }

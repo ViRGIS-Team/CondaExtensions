@@ -155,6 +155,7 @@ namespace Conda
         }
     }
 
+
     public class CondaApp
     {
         public const string TARGETS = "--platform win-64 --platform osx-64 --platform osx-arm64 --platform linux-64";
@@ -400,6 +401,15 @@ namespace Conda
                     compiler.WaitForExit();
                     if (compiler.ExitCode != 0)
                         throw new Exception(compiler.StandardError.ReadToEnd());
+
+                    GitIgnoreUpdater( new string[] {
+                        "Plugins/*",
+                        "Plugins.meta",
+                        "pixi",
+                        "pixi.meta",
+                        "pixi.exe",
+                        "pixi.exe.meta"
+                    });
                 }
             }
             if (File.Exists(Path.Combine(CondaPath, ".config.json")))
@@ -423,6 +433,50 @@ namespace Conda
             catch (Exception e)
             {
                 Debug.LogException(e);
+            }
+        }
+
+        public void GitIgnoreUpdater(string[] newEntries)
+        {
+            string gitignorePath = Path.Combine(CondaPath, ".gitignore");
+
+            // Ensure .gitignore exists
+            if (!File.Exists(gitignorePath))
+            {
+                Debug.Log(".gitignore not found. Creating a new one...");
+                File.WriteAllText(gitignorePath, string.Empty);
+            }
+
+            // Read existing lines (ignoring blank lines and whitespace)
+            var lines = File.ReadAllLines(gitignorePath)
+                            .Select(l => l.Trim())
+                            .Where(l => !string.IsNullOrWhiteSpace(l))
+                            .ToList();
+
+            bool modified = false;
+
+            foreach (string entry in newEntries)
+            {
+                if (!lines.Contains(entry))
+                {
+                    lines.Add(entry);
+                    modified = true;
+                    Console.WriteLine($"Added: {entry}");
+                }
+                else
+                {
+                    Console.WriteLine($"Already present: {entry}");
+                }
+            }
+
+            if (modified)
+            {
+                File.WriteAllLines(gitignorePath, lines);
+                Console.WriteLine("✅ .gitignore updated successfully.");
+            }
+            else
+            {
+                Console.WriteLine("No changes made. All entries already exist.");
             }
         }
 
@@ -547,6 +601,7 @@ namespace Conda
                 return false;
             }
             if (items.Length == 0) return false;
+            if (!Directory.Exists(PluginPath) || Directory.GetDirectories(PluginPath).Length == 0) return false;
             return Array.Exists( items, item => item.name == name && item.version == packageVersion );
         }
 
@@ -589,7 +644,11 @@ namespace Conda
                                     break;
                             }
                         }
-                        RecurseAndClean(path, excludes.ToArray(), includes.ToArray());
+                        if (Directory.Exists(path)){
+                            RecurseAndClean(path, excludes.ToArray(), includes.ToArray());
+                        } else {
+                            Debug.Log($"Attempted to Clean invalid directory {path}");
+                        }
                     }
                 }
                 if (package.Shared_Datas != null && package.Shared_Datas.Length > 0)
