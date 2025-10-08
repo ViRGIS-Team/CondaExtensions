@@ -320,7 +320,7 @@ namespace Conda
             if (!File.Exists(m_PixiApp))
             {
                 // need to install micromamba which is totally stand-alone
-                Debug.Log($"Platform : {m_Platform.ToCondaString()}");
+                Debug.Log($"<color=blue>Platform : {m_Platform.ToCondaString()}</color>");
                 if (m_Target != m_Platform)
                 {
                     Debug.Log($"Target : {m_Target.ToCondaString()}");
@@ -483,7 +483,7 @@ namespace Conda
         public void Add(string install_string, ConfigFile.Package package_details = null)
         {
 
-            Debug.Log($"Starting Package Add for {install_string}");
+            Debug.Log($"<color=blue>Starting Package Add for {install_string}</color>");
  
             //Run the Pixi Add process using the package specific install script
             using (Process compiler = new Process())
