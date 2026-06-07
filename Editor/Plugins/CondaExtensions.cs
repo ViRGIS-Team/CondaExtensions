@@ -331,6 +331,7 @@ namespace Conda
                     client.DownloadFile(m_PixiUrl, m_PixiApp);
                     switch (m_Platform)
                     {
+                        case Platform.Windows_x64:
                             client.DownloadFile("https://github.com/pavelzw/pixi-install-to-prefix/releases/download/v0.1.6/pixi-install-to-prefix-x86_64-pc-windows-msvc.exe", Path.Combine(CondaPath, "pitr.exe"));
                             break;
                         case Platform.Mac_x64:
