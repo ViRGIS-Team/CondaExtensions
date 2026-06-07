@@ -319,7 +319,7 @@ namespace Conda
 
             if (!File.Exists(m_PixiApp))
             {
-                // need to install micromamba which is totally stand-alone
+                // need to install pixi which is totally stand-alone
                 Debug.Log($"<color=blue>Platform : {m_Platform.ToCondaString()}</color>");
                 if (m_Target != m_Platform)
                 {
@@ -331,6 +331,9 @@ namespace Conda
                     client.DownloadFile(m_PixiUrl, m_PixiApp);
                     switch (m_Platform)
                     {
+                        case Platform.Windows_x64:
+                            client.DownloadFile("https://github.com/pavelzw/pixi-install-to-prefix/releases/download/v0.1.6/pixi-install-to-prefix-x86_64-pc-windows-msvc.exe", Path.Combine(CondaPath, "pitr.exe"));
+                            break;
                         case Platform.Mac_x64:
                         case Platform.Mac_Arm64:
                             using (Process compiler = new Process())
@@ -535,12 +538,13 @@ namespace Conda
                 switch (m_Platform)
                 {
                     case Platform.Windows_x64:
-                        compiler.StartInfo.FileName = "powershell.exe";
-                        compiler.StartInfo.Arguments = $"-ExecutionPolicy Bypass {m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target.ToCondaString()} {CondaDefault(m_Target)}";
+                        compiler.StartInfo.FileName = Path.Combine(CondaPath, "pitr.exe");
+                        compiler.StartInfo.Arguments = $"--no-activation-scripts --platform {target.ToCondaString()} {CondaDefault(m_Target)}";
                         break;
                     default:
                         compiler.StartInfo.FileName = "/bin/bash";
                         compiler.StartInfo.Arguments = $" -c \"{m_PixiApp} exec pixi-install-to-prefix --no-activation-scripts --platform {target.ToCondaString()} {CondaDefault(m_Target)}\" ";
+                        compiler.StartInfo.UseShellExecute = false;
                         break;
                 }
                 compiler.StartInfo.UseShellExecute = false;
@@ -549,7 +553,6 @@ namespace Conda
                 compiler.StartInfo.CreateNoWindow = true;
                 compiler.StartInfo.WorkingDirectory = CondaPath;
                 compiler.Start();
-                //compiler.StandardOutput.ReadToEnd();
                 compiler.WaitForExit();
                 if (compiler.ExitCode != 0)
                     throw new Exception(compiler.StandardError.ReadToEnd());
