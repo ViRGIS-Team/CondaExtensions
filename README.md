@@ -8,25 +8,27 @@ The purpose and usage of this package are explained in the following article :
 
 [Package Documentation](https://medium.com/runic-software/using-conda-as-a-unity-package-version-2-c3442bf9c245)
 
-## Version 2 Released
+## Version 3 Released
 
-Version 2 of the Conda Extensions does away with the need to pre-install Conda. The package now downloads its own standalone copy of [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html), which provides all of the package management functions.
+Version 3 of the Conda Extensions does away with Conda. The package now downloads its own standalone copy of [pixi](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html), which provides all of the package management functions.
 
-In Version 2, the library location is moved to Assets/Conda/Env. This makes it more intuitive to delete the Conda folder if a refresh is needed.
+In Version 3, the library location is moved to Assets/Conda/Plugins/.... This brings it in line with Unity standards and makes it more intuitive to delete the Conda folder if a refresh is needed.
 
-Note that to upgrade from V1 to V2 - YOU MUST DELETE THE CONDA FOLDER AND RESTART UNITY.
+Note that to upgrade from V2 to V3 - YOU MUST DELETE THE CONDA FOLDER AND RESTART UNITY.
 
-Version 2 also removes the need for package installation scripts - this is now all done in C#.
 
-## MacOs Architecture
+# Cross Compiling
 
-In Version 2, the extension will install the correct platform architecture based on the architecture of the Unity Editor by default (see below for override). This is mostly only important for macOS builds. Unity by default builds Universal binaries but these extensions can only put one set of binaries into the build.
+As of version 3 - Conda extensions can be used to cross compile on similar platforms - so you can compile on 
+OSX platforms between x86 and arm86 and similarly on Linux platforms.
 
-If you are building on Apple Silicon, you will get an app that works on 'osx-arm64'.
+You must use the `CONDA_ARCH_OVERRIDE` environment varaible, which can have the following values
 
-If you are building on Intel Silicon, you will get an app that works on 'osx-64'.
-
-If this is not what you want, for instance, in Cloud Build ...
+`osx-64`
+`osx-arm64`
+`linux-64`
+`linux-aarch64`
+ `win-64`
 
 # Use with Unity Cloud Build - Cross Compiling
 
