@@ -42,8 +42,8 @@ jobs:
       
           echo "$HOME/.upm/bin" >> "$GITHUB_PATH"
       
-            - name: Verify Unity UPM CLI
-              run: upm --help
+      - name: Verify Unity UPM CLI
+        run: upm --help
         
       - name: Check environment
         run: |
