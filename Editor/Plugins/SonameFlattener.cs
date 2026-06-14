@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 
 namespace Conda
 {
@@ -69,7 +70,13 @@ namespace Conda
                 }
 
                 File.Copy(candidate.SourceFile, candidate.OutputFile);
-    			AssetDatabase.ImportAsset(candidate.OutputFile);
+                var assetPath = Path.Combine("Assets", Path.GetRelativePath(
+                    Application.dataPath,
+                    candidate.OutputFile));
+    			AssetDatabase.ImportAsset( assetPath );
+                var importer = AssetImporter.GetAtPath(assetPath);
+                Debug.Log($"{assetPath} => {importer?.GetType().Name}");
+                
             }
         }
 
