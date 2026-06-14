@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor;
 
 namespace Conda
 {
@@ -68,6 +69,7 @@ namespace Conda
                 }
 
                 File.Copy(candidate.SourceFile, candidate.OutputFile);
+    			AssetDatabase.ImportAsset(candidate.OutputFile);
             }
         }
 
