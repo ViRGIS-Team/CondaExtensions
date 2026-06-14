@@ -708,6 +708,7 @@ namespace Conda
                         new Regex("\\.lib$"),
                         new Regex("\\.dylib$"),
                         new Regex("\\.so\\."),
+                        new Regex("\\.so$"),
                         new Regex("\\.meta$"),
                         });
                     }
