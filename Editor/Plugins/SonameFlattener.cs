@@ -62,10 +62,12 @@ namespace Conda
                 Console.WriteLine(
                     $"Copying {candidate.SourceFile} -> {candidate.OutputFile}");
 
-                File.Copy(
-                    candidate.SourceFile,
-                    candidate.OutputFile,
-                    overwrite: true);
+                if (File.Exists(candidate.OutputFile))
+                {
+                    File.Delete(candidate.OutputFile);
+                }
+
+                File.Copy(candidate.SourceFile, candidate.OutputFile);
             }
         }
 
