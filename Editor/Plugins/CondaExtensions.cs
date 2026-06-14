@@ -279,7 +279,7 @@ namespace Conda
                 }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                m_PixiUrl = "https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-linux-64";
+                m_PixiUrl = "https://github.com/prefix-dev/pixi/releases/latest/download/pixi-x86_64-unknown-linux-musl";
                 m_Platform = Platform.Linux_x64;
                 m_PixiApp = Path.Combine(CondaPath, "pixi");
             }
@@ -707,7 +707,7 @@ namespace Conda
                         RecurseAndClean(condaLibrary(target), new Regex[] {
                         new Regex("\\.lib$"),
                         new Regex("\\.dylib$"),
-                        new Regex("\\.so$"),
+                        new Regex("\\.so\\."),
                         new Regex("\\.meta$"),
                         });
                     }
