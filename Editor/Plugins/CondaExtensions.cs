@@ -558,6 +558,11 @@ namespace Conda
                     throw new Exception(compiler.StandardError.ReadToEnd());
             }
             TreeShake(target);
+            if (target == Platform.Linux_x64 || target == Platform.Linux_Arm64)
+            {
+                SonameFlattener.CreateUnversionedSoFiles(condaLibrary(target));
+            }
+            
         }
 
 
