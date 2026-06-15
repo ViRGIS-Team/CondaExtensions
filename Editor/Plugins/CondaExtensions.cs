@@ -188,7 +188,7 @@ namespace Conda
                 case Platform.Windows_x64:
                     return Path.Combine(PluginPath, "Windows", "x64");
                 case Platform.Linux_x64:
-                    return Path.Combine(PluginPath, "Linux", "x64");
+                    return Path.Combine(PluginPath, "x64");
                 case Platform.Mac_Arm64:
                     return Path.Combine(PluginPath, "OSX", "arm64");
                 //case Platform.:
@@ -203,7 +203,7 @@ namespace Conda
                         case Platform.Mac_Arm64:
                             return Path.Combine(PluginPath, "OSX", "arm64");
                         case Platform.Linux_x64:
-                            return Path.Combine(PluginPath, "Linux", "x64");
+                            return Path.Combine(PluginPath,  "x64");
                         default:
                             throw new Exception("Conda Platform is invalid");
                     }

@@ -70,13 +70,6 @@ namespace Conda
                 }
 
                 File.Copy(candidate.SourceFile, candidate.OutputFile);
-                var assetPath = Path.Combine("Assets", Path.GetRelativePath(
-                    Application.dataPath,
-                    candidate.OutputFile));
-    			AssetDatabase.ImportAsset( assetPath );
-                var importer = AssetImporter.GetAtPath(assetPath);
-                Debug.Log($"{assetPath} => {importer?.GetType().Name}");
-                
             }
         }
 
