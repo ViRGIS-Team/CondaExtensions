@@ -590,10 +590,6 @@ namespace Conda
             }
 
             TreeShake(target);
-            if (target == Platform.Linux_x64 || target == Platform.Linux_Arm64)
-            {
-                SonameFlattener.CreateUnversionedSoFiles(condaLibrary(target));
-            }
             
         }
 
